@@ -4,8 +4,6 @@ from bs2json import bs2json
 import time
 import sys
 
-url_comm = 'https://www.cricbuzz.com/live-cricket-scores/35563/indw-vs-rsaw-5th-odi-south-africa-women-tour-of-india-2021'
-url = 'https://www.cricbuzz.com/live-cricket-scorecard/35563/indw-vs-rsaw-5th-odi-south-africa-women-tour-of-india-2021'
 
 class Innings:
 	def __init__(self,x):
@@ -15,6 +13,8 @@ class Innings:
 
 class Cricket:
 	def __init__(self, comm_url, sckrd_url):
+		self.selected = []
+		self.is_live = True
 		self.url_comm = comm_url
 		self.url = sckrd_url
 		self.data_comm = requests.get(self.url_comm).text
@@ -70,6 +70,33 @@ class Cricket:
 			curr_team = self.conv.convert(div)
 		return curr_team['div']['span'][0]['text']
 
+	def get_bats_for_bot(self):
+		batball = []
+		for div in self.soup_comm.findAll('div', attrs={'class':'cb-col cb-col-100 cb-min-itm-rw'}):
+			json1 = self.conv.convert(div)
+			batball.append(json1['div'])
+		bat = batball[:2]
+		bow = [batball[2]]
+		ans = []
+		dic = {}
+		for i in range(2):
+			dic['Batsman ' + str(i+1)] = (str(bat[i]['div'][0]['a']['text']), str(bat[i]['div'][1]['text']),str(bat[i]['div'][2]['text']))
+			# ans.append('Batsman ' + str(i+1) +  ' : ' + str(bat[i]['div'][0]['a']['text'])+
+			# 	'\nRuns : ' + str(bat[i]['div'][1]['text']) + '\nBalls : ' + str(bat[i]['div'][2]['text']))
+		return dic
+
+	def get_bowl_for_bot(self):
+		batball = []
+		for div in self.soup_comm.findAll('div', attrs={'class':'cb-col cb-col-100 cb-min-itm-rw'}):
+			json1 = self.conv.convert(div)
+			batball.append(json1['div'])
+		bat = batball[:2]
+		bow = [batball[2]]
+		dic = {'name':str(bow[0]['div'][0]['a']['text']),'over':str(bow[0]['div'][1]['text']),
+			'runs':str(bow[0]['div'][3]['text']),'wickets':str(bow[0]['div'][4]['text'])}
+		return dic
+
+
 	def get_playing_bats(self):
 		batball = []
 		for div in self.soup_comm.findAll('div', attrs={'class':'cb-col cb-col-100 cb-min-itm-rw'}):
@@ -102,7 +129,7 @@ class Cricket:
 
 		rows = len(curr_team['div']['div']) - 3
 		x = str(curr_team['div']['div'][0]['span'][0]['text'])
-		curr_bat_name = x[0:x.index('Innings')-1]
+		curr_bat_name = x.split(' ')[0]
 		for j in range(2,rows):
 
 			name = curr_team['div']['div'][j]['div'][0]['a']['text']
@@ -122,10 +149,6 @@ class Cricket:
 		c = 0
 		div = l[1]
 		curr_bowl = self.conv.convert(div)
-			# print(c, '\n')
-			# print(curr_bowl)
-			# print('\n')
-			# c+=1
 
 		rows = len(curr_bowl['div']['div'])
 
@@ -154,9 +177,9 @@ class Cricket:
 			r = r*20
 			self.Team[curr_bowl_name][i] = r 
 	def Update(self):
-		print(cric.get_curr_team_score())
-		print(cric.get_playing_bats())
-		print(cric.get_playing_bowl())
+		print(self.get_curr_team_score())
+		print(self.get_playing_bats())
+		print(self.get_playing_bowl())
 		self.Update_Innings_stats()
 		
 		self.pretty_print(self.Inning[self.team1].Batsman)
@@ -195,17 +218,3 @@ class Cricket:
 				print(self.Team[i][j], end=" "*(6-len(str(self.Team[i][j]))) )
 				print()
 			print()
-
-
-cric = Cricket(url_comm, url)
-cric.get_playing_11()
-# cric.Update()
-# print(cric.Team)
-from os import system
-while True:
-	cric.give_data_and_soup()
-	cric.Update()
-	# cric.Update
-	time.sleep(30)
-
-	_ = system('cls')
